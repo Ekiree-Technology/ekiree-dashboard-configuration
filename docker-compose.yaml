@@ -103,12 +103,13 @@ services:
       - mysql_user
       - mysql_password
       - mysql_database
-      - S3_BUCKET_NAME
-      - S3_ACCESS_KEY
-      - S3_SECRET_KEY
-      - S3_BUCKET_ENDPOINT
+      - BACKUP_BUCKET_NAME
+      - BACKUP_ACCESS_KEY
+      - BACKUP_SECRET_KEY
+      - BACKUP_BUCKET_ENDPOINT
+      - SOPS_ENCRYPTION_KEY
     environment:
-      - USE_S3=false
+      - USE_S3=true
     deploy:
       mode: replicated
       replicas: 1
@@ -158,6 +159,7 @@ secrets:
     external: true
   S3_BUCKET_ENDPOINT:
     external: true
+
   # Configurating the database to interact with Poetfolio
   mysql_root_password:
     external: true
@@ -166,4 +168,18 @@ secrets:
   mysql_user:
     external: true
   mysql_password:
+    external: true
+
+  # Remote database backups
+  BACKUP_BUCKET_NAME:
+    external: true
+  BACKUP_R2_TOKEN_VALUE:
+    external: true
+  BACKUP_ACCESS_KEY:
+    external: true
+  BACKUP_SECRET_KEY:
+    external: true
+  BACKUP_BUCKET_ENDPOINT:
+    external: true
+  SOPS_ENCRYPTION_KEY:
     external: true
