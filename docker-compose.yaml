@@ -85,17 +85,17 @@ services:
   mariadb:
     image: mariadb:latest
     environment:
-      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
-      MYSQL_DATABASE_FILE: /run/secrets/mysql_database
-      MYSQL_USER_FILE: /run/secrets/mysql_user
-      MYSQL_PASSWORD_FILE: /run/secrets/mysql_password
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/MYSQL_ROOT_PASSWORD
+      MYSQL_DATABASE_FILE: /run/secrets/MYSQL_DATABASE
+      MYSQL_USER_FILE: /run/secrets/MYSQL_USER
+      MYSQL_PASSWORD_FILE: /run/secrets/MYSQL_PASSWORD
     volumes:
       - mariadb_data:/var/lib/mysql
     secrets:
-      - mysql_root_password
-      - mysql_database
-      - mysql_user
-      - mysql_password
+      - MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
     networks:
       - prod_network
 
@@ -104,9 +104,9 @@ services:
     volumes:
       - /var/backups/mariadb:/backups  # Persist backups on the host
     secrets:
-      - mysql_user
-      - mysql_password
-      - mysql_database
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_DATABASE
       - BACKUP_BUCKET_NAME
       - BACKUP_ACCESS_KEY
       - BACKUP_SECRET_KEY
@@ -171,13 +171,13 @@ secrets:
     external: true
 
   # Configurating the database to interact with Poetfolio
-  mysql_root_password:
+  MYSQL_ROOT_PASSWORD:
     external: true
-  mysql_database:
+  MYSQL_DATABASE:
     external: true
-  mysql_user:
+  MYSQL_USER:
     external: true
-  mysql_password:
+  MYSQL_PASSWORD:
     external: true
 
   # Remote database backups
