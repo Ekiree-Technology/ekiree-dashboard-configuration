@@ -35,6 +35,8 @@ services:
       - letsencrypt:/letsencrypt
       # Allows Traefik to listen to Docker event
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - prod_network
 
   ekiree_dashboard:
     image: "ghcr.io/ekiree-technology/ekiree-dashboard:000.0.1b"
@@ -77,6 +79,8 @@ services:
         order: start-first
     depends_on:
       - mariadb
+    networks:
+      - prod_network
 
   mariadb:
     image: mariadb:latest
@@ -93,7 +97,7 @@ services:
       - mysql_user
       - mysql_password
     networks:
-      - default
+      - prod_network
 
   ekiree-dashboard-admin:
     image: ghcr.io/ekiree-technology/ekiree-dashboard-admin:latest
@@ -113,11 +117,17 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+    networks:
+      - prod_network
 
 
 volumes:
   mariadb_data:
   letsencrypt:
+
+networks:
+  prod_network:
+    driver: overlay
 
 secrets:
   # Poetfolio Settings
