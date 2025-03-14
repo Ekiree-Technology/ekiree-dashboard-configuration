@@ -1,0 +1,169 @@
+---
+services:
+  reverse-proxy:
+    image: traefik:v3.1
+    command:
+      # Enable Docker
+      - "--providers.docker=true"
+      # Only expose services with labels
+      - "--providers.docker.exposedbydefault=false"
+      # HTTPS entry point
+      - "--entryPoints.websecure.address=:443"
+      # Use TLS challenge
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      # ACME email
+      - "--certificatesresolvers.myresolver.acme.email=noah@ekiree.tech"
+      # ACME certificate storage
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      # HTTP entry point
+      - "--entryPoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+    ports:
+      - mode: host
+        protocol: tcp
+        published: 80
+        target: 80
+      - mode: host
+        protocol: tcp
+        published: 443
+        target: 443
+    depends_on:
+      - ekiree_dashboard
+    volumes:
+      # Mount directory for certificates
+      - letsencrypt:/letsencrypt
+      # Allows Traefik to listen to Docker event
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  ekiree_dashboard:
+    image: "ghcr.io/ekiree-technology/ekiree-dashboard:000.0.1b"
+    labels:
+      # Enable Traefik for this service
+      - "traefik.enable=true"
+      # Port where the service is running
+      - "traefik.http.services.ekiree_dashboard.loadbalancer.server.port=8000"
+      # Routing rule for the service
+      - "traefik.http.routers.ekiree_dashboard.rule=Host(`test.ekiree.tech`)"
+      # Use the HTTPS entry point
+      - "traefik.http.routers.ekiree_dashboard.entrypoints=websecure"
+      # Use the ACME certresolver
+      - "traefik.http.routers.ekiree_dashboard.tls.certresolver=myresolver"
+    secrets:
+      - POETFOLIO_SECRET_KEY
+      - POETFOLIO_ALLOWED_HOSTS
+      - POETFOLIO_CSRF_TRUSTED_ORIGINS
+      - POETFOLIO_STATIC
+      - POETFOLIO_EMAIL_HOST
+      - POETFOLIO_EMAIL_USER
+      - POETFOLIO_EMAIL_PASSWORD
+      - POETFOLIO_PRODUCTION
+      - POETFOLIO_DB_HOST
+      - POETFOLIO_DB_NAME
+      - POETFOLIO_DB_USER
+      - POETFOLIO_DB_PASSWORD
+      - USE_S3
+      - S3_BUCKET_NAME
+      - CLOUDFLARE_R2_TOKEN_VALUE
+      - S3_ACCESS_KEY
+      - S3_SECRET_KEY
+      - S3_BUCKET_ENDPOINT
+    environment:
+      - DOCKER_SECRETS=True
+    deploy:
+      mode: replicated
+      replicas: 3
+      update_config:
+        order: start-first
+    depends_on:
+      - mariadb
+
+  mariadb:
+    image: mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+      MYSQL_DATABASE_FILE: /run/secrets/mysql_database
+      MYSQL_USER_FILE: /run/secrets/mysql_user
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_password
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    secrets:
+      - mysql_root_password
+      - mysql_database
+      - mysql_user
+      - mysql_password
+    networks:
+      - default
+
+  ekiree-dashboard-admin:
+    image: ghcr.io/ekiree-technology/ekiree-dashboard-admin:latest
+    volumes:
+      - /var/backups/mariadb:/backups  # Persist backups on the host
+    secrets:
+      - mysql_user
+      - mysql_password
+      - mysql_database
+      - S3_BUCKET_NAME
+      - S3_ACCESS_KEY
+      - S3_SECRET_KEY
+      - S3_BUCKET_ENDPOINT
+    environment:
+      - USE_S3=false
+    deploy:
+      mode: replicated
+      replicas: 1
+
+
+volumes:
+  mariadb_data:
+  letsencrypt:
+
+secrets:
+  # Poetfolio Settings
+  POETFOLIO_SECRET_KEY:
+    external: true
+  POETFOLIO_ALLOWED_HOSTS:
+    external: true
+  POETFOLIO_CSRF_TRUSTED_ORIGINS:
+    external: true
+  POETFOLIO_STATIC:
+    external: true
+  POETFOLIO_EMAIL_HOST:
+    external: true
+  POETFOLIO_EMAIL_USER:
+    external: true
+  POETFOLIO_EMAIL_PASSWORD:
+    external: true
+  POETFOLIO_PRODUCTION:
+    external: true
+  POETFOLIO_DB_HOST:
+    external: true
+  POETFOLIO_DB_NAME:
+    external: true
+  POETFOLIO_DB_USER:
+    external: true
+  POETFOLIO_DB_PASSWORD:
+    external: true
+
+  # Cloudflare bucket settings for media
+  USE_S3:
+    external: true
+  S3_BUCKET_NAME:
+    external: true
+  CLOUDFLARE_R2_TOKEN_VALUE:
+    external: true
+  S3_ACCESS_KEY:
+    external: true
+  S3_SECRET_KEY:
+    external: true
+  S3_BUCKET_ENDPOINT:
+    external: true
+  # Configurating the database to interact with Poetfolio
+  mysql_root_password:
+    external: true
+  mysql_database:
+    external: true
+  mysql_user:
+    external: true
+  mysql_password:
+    external: true
